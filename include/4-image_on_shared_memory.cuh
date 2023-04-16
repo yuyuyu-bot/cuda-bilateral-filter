@@ -113,29 +113,7 @@ void image_on_shared_memory(
     static thrust::device_vector<float> d_kernel_color_table(kernel_color_table_len);
 
     if (!initialized) {
-        const int radius  = ksize / 2;
-        const auto gauss_space_coeff = -1.f / (2 * sigma_space * sigma_space);
-        const auto gauss_color_coeff = -1.f / (2 * sigma_color * sigma_color);
-
-        std::vector<float> h_kernel_space(ksize * ksize);
-        for (int ky = -radius; ky <= radius; ky++) {
-            for (int kx = -radius; kx <= radius; kx++) {
-                const auto kidx = (ky + radius) * ksize + (kx + radius);
-                const auto r2 = kx * kx + ky * ky;
-                if (r2 > radius * radius) {
-                    continue;
-                }
-                h_kernel_space[kidx] = std::exp(r2 * gauss_space_coeff);
-            }
-        }
-        thrust::copy(h_kernel_space.begin(), h_kernel_space.end(), d_kernel_space.begin());
-
-        std::vector<float> h_kernel_color_table(kernel_color_table_len);
-        for (std::uint32_t i = 0; i < h_kernel_color_table.size(); i++) {
-            h_kernel_color_table[i] = std::exp((i * i) * gauss_color_coeff);
-        }
-        thrust::copy(h_kernel_color_table.begin(), h_kernel_color_table.end(), d_kernel_color_table.begin());
-
+        precompute_kernels(ksize, sigma_space, sigma_color, d_kernel_space, d_kernel_color_table);
         initialized = true;
     }
 
